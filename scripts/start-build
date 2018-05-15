@@ -63,7 +63,7 @@ version_id=$(s3_put_archive);
 echo "S3 Object Version: ${version_id}";
 
 
-# helper to format env vars containing the ci_env_pattern (BITBUCKET_ or CI_) in space-separated list of `name=NAME,value=VALUE` elements
+# helper to format env vars containing the ci_env_pattern (BITBUCKET_ or CI_|GITLAB_CI_) in a space-separated list of `name=NAME,value=VALUE` elements
 ci_env() {
   env \
   | grep -E ${ci_env_pattern} \
@@ -71,7 +71,7 @@ ci_env() {
   | tr "\n" " "
 };
 
-# helper to format env vars containing the ci_env_pattern (BITBUCKET_ or CI_) in a line-separated list `{"name":"NAME","value":"VALUE"}` elements
+# helper to format env vars containing the ci_env_pattern (BITBUCKET_ or CI_|GITLAB_CI_) in a line-separated list `{"name":"NAME","value":"VALUE"}` elements
 ci_env_json() {
   env \
     | grep -E ${ci_env_pattern} \
@@ -81,7 +81,7 @@ ci_env_json() {
 
 ## Start build
 start_build() {
-  ## build a codebuild "cli-input-json" object out of the CI env vars, so we they can be passed to codebuild runner
+  ## build a codebuild "cli-input-json" object out of the CI env vars, so they can be passed to codebuild runner
   # format:
   # {
   #   "environmentVariablesOverride": [
@@ -92,10 +92,14 @@ start_build() {
   # }
   echo $(ci_env_json) | jq -s -c '{environmentVariablesOverride:.}' > /tmp/_cli_input.json;
 
-  # User provided a a codebuild "cli-input-json" file, merge the env vars in the `environmentVariablesOverride` key with user provided "cli-input-json" file, otherwise only the env vars in the environmentVariablesOverride key will be used
+  # User provided a a codebuild "cli-input-json" file: merge it with environment variables gathered in _cli_input.json file
+  # The spec of the user provided cli-input-file can be found here: https://docs.aws.amazon.com/codebuild/latest/APIReference/API_StartBuild.html
   if [ -n "${CODEBUILD_START_JSON_FILE}" ]; then
     jq -s -c '[.[] | to_entries] | flatten | reduce (.[]) as $dot ({}; (if ($dot.value|type == "array") then .[$dot.key] += $dot.value else .[$dot.key] = $dot.value end))' /tmp/_cli_input.json ${CODEBUILD_START_JSON_FILE} > /tmp/_cli_input.json;
   fi
+
+  # make sure the cli input file does not have duplicate env var entries
+  jq -s -c '.[] | .environmentVariablesOverride |= unique' > /tmp/cli_input.json;
 
   # helper to conditionally pass the `--project-name` option to codebuild start-build command
   local project_name_arg="--project-name ${CODEBUILD_PROJECT_NAME}";
@@ -105,7 +109,7 @@ start_build() {
 
   aws codebuild start-build ${project_name_arg} \
     --source-version ${version_id} \
-    --cli-input-json file:///tmp/_cli_input.json \
+    --cli-input-json file:///tmp/cli_input.json \
     --output text \
     --query 'build.id' \
     ${OPTS}
