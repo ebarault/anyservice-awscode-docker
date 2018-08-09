@@ -24,7 +24,13 @@ fi
 
 # Switching AWS principal
 if [ -n "${AWS_ASSUME_ROLE}" ]; then
-  . aws_assume_role "${AWS_ASSUME_ROLE}"
+  AWS_ASSUME_ROLE_ARN=${AWS_ASSUME_ROLE}
+  unset AWS_ASSUME_ROLE
+  # set defaut aws assume-role session duration to 1 hour if not set
+  if [ -z "${AWS_ASSUME_ROLE_DURATION}" ]; then
+    AWS_ASSUME_ROLE_DURATION=3600
+  fi
+  ./aws_assume_role "${AWS_ASSUME_ROLE_ARN}" --duration-seconds ${AWS_ASSUME_ROLE_DURATION}
 fi
 
 # Detect CI environment: either BITBUCKET or GITLAB_CI
@@ -123,7 +129,7 @@ echo ${start_build_id};
 if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
 
   ## Until build is complete, wait and check again
-  until [ $(aws codebuild batch-get-builds --ids ${start_build_id} --output text --query 'builds[0].buildComplete') = "True" ];
+  until [ "$(aws codebuild batch-get-builds --ids ${start_build_id} --output text --query 'builds[0].buildComplete')" = "True" ];
   do
     echo "Waiting for ${start_build_id} to complete";
     sleep 5;

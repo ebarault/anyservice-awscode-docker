@@ -4,6 +4,7 @@ if [ "$AWS_ASSUME_ROLE" ]; then
   ROLE=$AWS_ASSUME_ROLE
 elif [ "$1" ]; then
   ROLE=$1
+  shift
 else
   echo "No role provided, exiting!"
   exit
@@ -11,12 +12,15 @@ fi
 
 assumed_role=$(aws sts assume-role \
                     --role-arn $ROLE \
-                    --role-session-name "RoleSession")
+                    --role-session-name "RoleSession" \
+                    $*)
 
 AWS_ASSUMED_ROLE_USER=$(echo $assumed_role | jq .AssumedRoleUser.Arn | xargs)
+AWS_SESSION_EXPIRATION=$(echo $assumed_role | jq .Credentials.Expiration | xargs)
 export AWS_ACCESS_KEY_ID=$(echo $assumed_role | jq .Credentials.AccessKeyId | xargs)
 export AWS_SECRET_ACCESS_KEY=$(echo $assumed_role | jq .Credentials.SecretAccessKey | xargs)
 export AWS_SESSION_TOKEN=$(echo $assumed_role | jq .Credentials.SessionToken | xargs)
 
-echo "Assuming role $AWS_ASSUME_ROLE"
+echo "Assuming role $ROLE"
 echo "AWS user is now $AWS_ASSUMED_ROLE_USER"
+echo "Session will expire at $AWS_SESSION_EXPIRATION"
