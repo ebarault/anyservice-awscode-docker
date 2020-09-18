@@ -1,15 +1,15 @@
-FROM alpine:edge
-MAINTAINER @ebarault
+FROM alpine:latest
+LABEL maintainer="@ebarault"
 
-RUN apk --no-cache add \
+RUN apk update && \
+      apk --no-cache add \
       bash \
       curl \
       less \
       groff \
       jq \
-      python \
-      py-pip \
-      py2-pip && \
+      python3 \
+      py-pip && \
       pip install --upgrade pip awscli s3cmd && \
       mkdir /root/.aws \
       && rm -rf /var/cache/apk/*
@@ -27,4 +27,3 @@ ADD scripts/ /usr/local/bin
 RUN chmod +x /usr/local/bin/start-build
 RUN chmod +x /usr/local/bin/push-to-pipeline
 RUN chmod +x /usr/local/bin/aws_assume_role
-RUN chmod +x /usr/local/bin/get-codebuild-artifacts
