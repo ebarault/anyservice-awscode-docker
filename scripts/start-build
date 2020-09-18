@@ -243,7 +243,8 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
   artifacts=`echo ${build_result} | jq -c -r '.artifacts'`;
   artifacts_location=`echo ${artifacts} | jq -c -r '.location'`;
 
-  echo "BUILD_RESULT : ${build_result}";
+  # DEBUG
+  # echo "BUILD_RESULT : ${build_result}";
   
   if [ "${artifacts_location}" != "" ]; then
     echo
@@ -251,7 +252,6 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     echo
     echo "${artifacts}" | jq .
     
-    echo "ARTIFACTS : ${codebuild_artifacts}";
     ## Extract artifacts S3 bucket and key
     artifacts_s3=`echo ${artifacts_location} | awk -F: '{print $6}'`;
     artifacts_s3_bucket=`echo ${artifacts_s3} | cut -d '/' -f 1`;
@@ -264,12 +264,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     ## Get version for artifacts_s3_key
     # Tips : Only work with zip artifacts
     echo "s3://${artifacts_s3_bucket}/${artifacts_s3_key}";
-
-    aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key} . ;
-    aws s3api get-object \
-      --bucket ${artifacts_s3_bucket} \
-      --key "${artifacts_s3_key}" \
-      codebuild_artifacts.zip;
+    aws s3 cp s3://${artifacts_s3_bucket}/${artifacts_s3_key} codebuild_artifacts.zip;
     unzip codebuild_artifacts.zip;
   fi
 
