@@ -261,7 +261,6 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     cd .codebuild_artifacts;
 
     ## Fetch artifact file in current dir
-    ## Get version for artifacts_s3_key
     # Tips : Only work with zip artifacts
     echo "s3://${artifacts_s3_bucket}/${artifacts_s3_key}";
     aws s3 cp s3://${artifacts_s3_bucket}/${artifacts_s3_key} codebuild_artifacts.zip;
