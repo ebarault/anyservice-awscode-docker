@@ -32,6 +32,8 @@ The full list of environment variables set by Gitlab pipeline is available at ht
 
 The user can export extra environment variables by prefixing them by `CI_` or `GITLAB_`, or by using the `CI_ENV_PATTERN` environment variable to provide extra prefixes to export.
 
+This image will download the zipped version of the codebuild artifacts and unzip it to .codebuild_artifacts 
+
 ### Bitbucket pipeline integration (`bitbucket-pipelines.yml`)
 ```yaml
 image: ebarault/codebuild-git-integration:latest
