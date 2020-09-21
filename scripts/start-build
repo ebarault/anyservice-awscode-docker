@@ -296,6 +296,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     echo "${artifacts}" | jq .
     
     ## Extract artifacts S3 bucket and key
+    # Artifacts_location format : "arn:aws:s3:::company-dev-s3-cicd-xxx/codebuild/cme-baseline/artifacts/f4cc70cc-0f38-4cd3-b839-5464bf6b8ed5/codebuild_artifacts.zip"
     artifacts_s3=`echo ${artifacts_location} | awk -F: '{print $6}'`;
     artifacts_s3_bucket=`echo ${artifacts_s3} | cut -d '/' -f 1`;
     artifacts_s3_key=`echo ${artifacts_s3} | cut -d '/' -f 2-`;
@@ -304,10 +305,17 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     cd .codebuild_artifacts;
 
     ## Fetch artifact file in current dir
-    # Tips : Only work with zip artifacts
-    echo "s3://${artifacts_s3_bucket}/${artifacts_s3_key}";
-    aws s3 cp s3://${artifacts_s3_bucket}/${artifacts_s3_key} codebuild_artifacts.zip;
-    unzip codebuild_artifacts.zip;
+    
+    if [ "${ARTIFACTS_PACKAGING}" = "NONE" ]; then
+      aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key}/ .;
+    elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ]
+      artifacts_name=`basename $artifacts_s3_key`
+      aws s3 cp s3://${artifacts_s3_bucket}/${artifacts_s3_key} .;
+      unzip $artifacts_name;
+    else
+      echo "Unsupported ARTIFACTS_PACKAGING value"
+    fi
+
   fi
 
 fi
