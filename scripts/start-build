@@ -258,10 +258,10 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     mkdir .codebuild_artifacts;
     cd .codebuild_artifacts;
 
-    ## Fetch artifact file in current dir
-    ARTIFACTS_PACKAGING=${ARTIFACTS_PACKAGING:-"ZIP"}
+    ## Fetch artifact files in current dir
+    CODEBUILD_ARTIFACTS_PACKAGING=${CODEBUILD_ARTIFACTS_PACKAGING:-"ZIP"}
 
-    if [ "${ARTIFACTS_PACKAGING}" = "NONE" ]; then
+    if [ "${CODEBUILD_ARTIFACTS_PACKAGING}" = "NONE" ]; then
       aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key}/ .;
     elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ] ; then
       if `aws s3 cp --quiet s3://${artifacts_s3_bucket}/${artifacts_s3_key} .` ; then
@@ -272,7 +272,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
         echo "Failed fetching artifacts from ${artifacts_s3_bucket}/${artifacts_s3_key}";
       fi
     else
-      echo "Unsupported ARTIFACTS_PACKAGING value"
+      echo "Unsupported CODEBUILD_ARTIFACTS_PACKAGING value"
     fi
 
   fi

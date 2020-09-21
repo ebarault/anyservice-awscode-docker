@@ -11,11 +11,11 @@ Integrate AWS CodeBuild and Pipelines with git services
 
 ## AWS CodeBuild
 
-This image will create a zip archive of the project, send it to a `CODEBUILD_S3_BUCKET`/`CODEBUILD_S3_KEY` location and start a new AWS CodeBuild build process.  The build process will be tied to the version of the archive in S3.
+This image will create a zip archive of the project, send it to a `CODEBUILD_S3_BUCKET`/`CODEBUILD_S3_KEY` location and start a new AWS CodeBuild build process. The build process will be tied to the version of the archive in S3.
 
 Bitbucket|GitLab pipelines will wait for AWS CodeBuild to finish and return success or failure based on the outcome of the build.
 
-This image will download the codebuild artifacts and download it to .codebuild_artifacts
+Artifacts produced by the codebuild project will be fetched from S3 to the `.codebuild_artifacts` dir of the Bitbucket|Gitlab runners so they can be used downstream in the pipelines.
 
 ## CI environment variables export
 CI-specific environment variables are exported to the AWS Codebuild runner:
@@ -33,7 +33,7 @@ The full list of environment variables set by Gitlab pipeline is available at ht
 The user can export extra environment variables by prefixing them by `CI_` or `GITLAB_`, or by using the `CI_ENV_PATTERN` environment variable to provide extra prefixes to export.
 
 ### Bitbucket pipeline integration (`bitbucket-pipelines.yml`)
-```
+```yaml
 image: ebarault/codebuild-git-integration:latest
 pipelines:
   default:
@@ -51,7 +51,7 @@ pipelines:
 ```
 
 ### GitLab-CI integration (`.gitlab-ci.yml`)
-```
+```yaml
 image: ebarault/codebuild-git-integration:latest
 stages:
     - build
@@ -71,6 +71,35 @@ codebuild_start:
             start-build
 ```
 
+### Artifacts
+
+Artifacts produced by the codebuild project will be fetched from S3 to the `.codebuild_artifacts` dir of the Bitbucket|Gitlab runners so they can be used downstream in the pipelines as shown in the following examples:
+
+- Gitlab: https://docs.gitlab.com/ee/ci/yaml/#artifacts
+```yaml
+linting:
+    image: ebarault/codebuild-git-integration:latest
+    script:
+        - start-build
+    artifacts:
+      paths:
+        - .codebuild_artifacts
+      expire_in: 20 week
+```
+
+- Bitbucket: https://support.atlassian.com/bitbucket-cloud/docs/configure-bitbucket-pipelinesyml/ (look for keyword "artifacts")
+```yaml
+pipelines:
+  default:
+    - step:
+        name: Build and test
+        image: ebarault/codebuild-git-integration:latest
+        script:
+            - start-build
+        artifacts:
+          - .codebuild_artifacts/**
+```
+
 ## AWS Pipeline
 
 Once a successful build has completed an AWS codepipeline can be executed as a Bitbucket Custom Pipeline from the respective commit. The artifact(s) produced by AWS CodeBuild will be fetched.  If the artifacts are not already in a zip archive they will be put in one and uploaded to the pipeline bucket and key path.
@@ -78,7 +107,7 @@ Once a successful build has completed an AWS codepipeline can be executed as a B
 The pipeline needs to be configured to run automatically when new files are loaded on the selected codepipeline S3 bucket.
 
 ### Bitbucket pipeline integration (`bitbucket-pipelines.yml`)
-```
+```yaml
 image: ebarault/codebuild-git-integration:latest
 pipelines:
   custom:
@@ -264,10 +293,11 @@ The relative path of the inner folder to zip and send to codebuild through S3. D
 
 Add additionals environment variables patterns to pass vars to codebuild when matching a given prefix. Each pattern separated by a pipe character `|`. Defaults to `CI_|GITLAB_` when using Gitlab-CI and `BITBUCKET_` when using Bitbucket
 
-#### `ARTIFACTS_PACKAGING`
+#### `CODEBUILD_ARTIFACTS_PACKAGING`
 **optional**
 
-The artifacts packaging value set in your codebuild project. Value are ZIP or NONE, default is ZIP.
+The artifacts packaging mode set in your codebuild project. Valid values are `ZIP` or `NONE`. Defaults to `ZIP`.
+See https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectArtifacts.html
 
 ---
 
