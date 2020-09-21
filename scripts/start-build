@@ -263,7 +263,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
 
     if [ "${ARTIFACTS_PACKAGING}" = "NONE" ]; then
       aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key}/ .;
-    elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ]
+    elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ] ; then
       artifacts_name=`basename $artifacts_s3_key`
       aws s3 cp s3://${artifacts_s3_bucket}/${artifacts_s3_key} .;
       unzip $artifacts_name;
