@@ -302,7 +302,8 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     cd .codebuild_artifacts;
 
     ## Fetch artifact file in current dir
-    
+    ARTIFACTS_PACKAGING = ${ARTIFACTS_PACKAGING:-"ZIP"}
+
     if [ "${ARTIFACTS_PACKAGING}" = "NONE" ]; then
       aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key}/ .;
     elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ]
