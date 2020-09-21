@@ -250,7 +250,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     echo "${artifacts}" | jq .
     
     ## Extract artifacts S3 bucket and key
-    # Artifacts_location format : "arn:aws:s3:::company-dev-s3-cicd-xxx/codebuild/cme-baseline/artifacts/f4cc70cc-0f38-4cd3-b839-5464bf6b8ed5/codebuild_artifacts.zip"
+    # Artifacts_location format : "arn:aws:s3:::company-dev-s3-cicd-xxx/codebuild/myproject/artifacts/f4cc70cc-0f38-4cd3-b839-5464bf6b8ed5/codebuild_artifacts.zip"
     artifacts_s3=`echo ${artifacts_location} | awk -F: '{print $6}'`;
     artifacts_s3_bucket=`echo ${artifacts_s3} | cut -d '/' -f 1`;
     artifacts_s3_key=`echo ${artifacts_s3} | cut -d '/' -f 2-`;
