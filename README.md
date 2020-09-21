@@ -267,7 +267,7 @@ Add additionals environment variables patterns to pass vars to codebuild when ma
 #### `ARTIFACTS_PACKAGING`
 **optional**
 
-Add additionals environment variables patterns to pass vars to codebuild when matching a given prefix. Each pattern separated by a pipe character `|`. Defaults to `CI_|GITLAB_` when using Gitlab-CI and `BITBUCKET_` when using Bitbucket
+The artifacts packaging value set in your codebuild project. Value are ZIP or NONE, default is ZIP.
 
 ---
 
