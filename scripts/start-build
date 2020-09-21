@@ -264,12 +264,12 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     if [ "${ARTIFACTS_PACKAGING}" = "NONE" ]; then
       aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key}/ .;
     elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ] ; then
-      if [ `aws s3 cp --quiet s3://${artifacts_s3_bucket}/${artifacts_s3_key} .` ] ; then
-        artifacts_name=`basename $artifacts_s3_key`
+      if `aws s3 cp --quiet s3://${artifacts_s3_bucket}/${artifacts_s3_key} .` ; then
+        artifacts_name=`basename $artifacts_s3_key`;
         unzip $artifacts_name;
-        echo "Download from s3 is Success ${artifacts_s3_bucket}/${artifacts_s3_key}"
+        echo "Succeed fetching artifacts from  ${artifacts_s3_bucket}/${artifacts_s3_key}";
       else
-        echo "Download from s3 is Failed ${artifacts_s3_bucket}/${artifacts_s3_key}"
+        echo "Failed fetching artifacts from  ${artifacts_s3_bucket}/${artifacts_s3_key}";
       fi
     else
       echo "Unsupported ARTIFACTS_PACKAGING value"
