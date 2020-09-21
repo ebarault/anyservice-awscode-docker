@@ -285,9 +285,6 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
   # Artifacts
   artifacts=`echo ${build_result} | jq -c -r '.artifacts'`;
   artifacts_location=`echo ${artifacts} | jq -c -r '.location'`;
-
-  # DEBUG
-  # echo "BUILD_RESULT : ${build_result}";
   
   if [ "${artifacts_location}" != "" ]; then
     echo
