@@ -310,9 +310,9 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
       if `aws s3 cp --quiet s3://${artifacts_s3_bucket}/${artifacts_s3_key} .` ; then
         artifacts_name=`basename $artifacts_s3_key`;
         unzip $artifacts_name;
-        echo "Succeed fetching artifacts from  ${artifacts_s3_bucket}/${artifacts_s3_key}";
+        echo "Succeed fetching artifacts from ${artifacts_s3_bucket}/${artifacts_s3_key}";
       else
-        echo "Failed fetching artifacts from  ${artifacts_s3_bucket}/${artifacts_s3_key}";
+        echo "Failed fetching artifacts from ${artifacts_s3_bucket}/${artifacts_s3_key}";
       fi
     else
       echo "Unsupported ARTIFACTS_PACKAGING value"
