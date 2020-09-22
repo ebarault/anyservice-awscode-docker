@@ -255,7 +255,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     artifacts_s3_bucket=`echo ${artifacts_s3} | cut -d '/' -f 1`;
     artifacts_s3_key=`echo ${artifacts_s3} | cut -d '/' -f 2-`;
 
-    mkdir .codebuild_artifacts;
+    mkdir -p .codebuild_artifacts;
     cd .codebuild_artifacts;
 
     ## Fetch artifact files in current dir
@@ -263,7 +263,7 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
 
     if [ "${CODEBUILD_ARTIFACTS_PACKAGING}" = "NONE" ]; then
       aws s3 sync s3://${artifacts_s3_bucket}/${artifacts_s3_key}/ .;
-    elif [ "${ARTIFACTS_PACKAGING}" = "ZIP" ] ; then
+    elif [ "${CODEBUILD_ARTIFACTS_PACKAGING}" = "ZIP" ] ; then
       if `aws s3 cp --quiet s3://${artifacts_s3_bucket}/${artifacts_s3_key} .` ; then
         artifacts_name=`basename $artifacts_s3_key`;
         unzip $artifacts_name;
