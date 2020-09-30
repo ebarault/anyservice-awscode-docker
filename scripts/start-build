@@ -136,7 +136,8 @@ start_build() {
 start_build_id=$(start_build);
 echo
 echo "-> Started build: ${start_build_id}";
-echo "Build details are available at the following url \nhttps://${AWS_DEFAULT_REGION}.console.aws.amazon.com/codebuild/home?region=${AWS_DEFAULT_REGION}#/builds/${start_build_id}/view/new"
+echo "Build details are available at the following url:"
+echo "https://${AWS_DEFAULT_REGION}.console.aws.amazon.com/codebuild/home?region=${AWS_DEFAULT_REGION}#/builds/${start_build_id}/view/new"
 echo
 ## Wait for build result (conditional)
 if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
@@ -170,7 +171,8 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
       return
     elif [ -z ${build_has_started} ]; then
       echo
-      echo "Cloudwatch logs are available at the following url \nhttps://${AWS_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_DEFAULT_REGION}#logEventViewer:group=${build_cwlogs_group};stream=${build_cwlogs_stream}"
+      echo "Cloudwatch logs are available at the following url:"
+      echo "https://${AWS_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_DEFAULT_REGION}#logEventViewer:group=${build_cwlogs_group};stream=${build_cwlogs_stream}"
       echo
       echo "-> Build phase started, log events follow:"
       echo "------------------------------------------"
