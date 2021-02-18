@@ -52,6 +52,12 @@ fetch_logs() {
   # extract token for logs pagination
   nextForwardToken=`echo ${log_events} | jq -c -r '.nextForwardToken'`;
 
+  # get-log-events may or may not return the same token when reaching the end of the stream, so we also check whether there are new events in the response and keep iterating from the same token until there are new log events
+  if [ "$nextForwardToken" = "$previousNextForwardToken" ] || [ "$events" = "" ]; then
+    nextForwardToken=$previousNextForwardToken
+    return 
+  fi
+
   # iterate on log events to display log messages only
   # Note: base64 -d on Alpine | --decode on MacOS for `base64 decode`
   for row in $(echo "${events}" | jq -r '@base64'); do
@@ -63,12 +69,8 @@ fetch_logs() {
     echo "${date}   ${message}"
   done
 
-  # if we have reached the end of the stream, get-log-events will return the same token we passed in,
-  # meaning that we need to fetch remaining logs at once if we have not reached the end of the stream
-  # otherwise we'll jump out of the loop and wait next iteration
-  if [ "${nextForwardToken}" != "" ] && [ "${nextForwardToken}" != "${previousNextForwardToken}" ]; then
-    fetch_logs
-  fi
+  # we have reached the end of the stream but there might be remaining log events, so we self invoke right away
+  fetch_logs
 }
 
 # Wait until build is complete and fetch logs
