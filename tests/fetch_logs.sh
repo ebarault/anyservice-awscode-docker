@@ -2,65 +2,78 @@
 
 set -e
 
-AWS_DEFAULT_REGION=eu-west-3
+export AWS_DEFAULT_REGION=eu-west-3
 
-# basic test
-# start_build_id=gfxiq-dev-beegreen-rd-data-management:62f99626-7494-4b61-be22-bcf45d37c8ce
-
-# test #74609:
-start_build_id=gfxiq-stg-beegreen-pp-data-management:e4edfcc6-5331-42fe-af1e-90421f645a9a
+start_build_id=$1
 
 fetch_logs() {
-  # get cloudwatch logs info
-  build_logs=$(aws codebuild batch-get-builds --ids ${start_build_id} --query 'builds[0].logs')
-  build_cwlogs_group=`echo ${build_logs} | jq -c -r '.groupName'`;
-  build_cwlogs_stream=`echo ${build_logs} | jq -c -r '.streamName'`;
 
-  if [ "${build_cwlogs_group}" = "null" ] || [ "${build_cwlogs_stream}" = "null" ]; then
-    echo "Waiting for build phase to start"
-    return
+  if [ -z "${build_cwlogs_stream}" ] || [ "${build_cwlogs_stream}" = "null" ]; then
+    build_logs=`aws codebuild batch-get-builds --ids ${start_build_id} --query 'builds[0].logs'`
+    build_cwlogs_group=`echo ${build_logs} | jq -c -r '.groupName'`;
+    build_cwlogs_stream=`echo ${build_logs} | jq -c -r '.streamName'`;
+
+    if [ "${build_cwlogs_stream}" != "null" ]; then
+      echo "Cloudwatch logs are available at the following url:"
+      echo "https://${AWS_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_DEFAULT_REGION}#logEventViewer:group=${build_cwlogs_group};stream=${build_cwlogs_stream}"
+    else
+      echo "Waiting for Cloudwatch Logs info"
+      sleep 5
+      fetch_logs
+    fi
   fi
 
   # get log events
-  if [ "${nextForwardToken}" = "" ]; then
-    log_events=$(aws logs get-log-events --log-group-name ${build_cwlogs_group} --log-stream-name ${build_cwlogs_stream} --start-from-head)
+  if [ "${has_events}" != "true" ]; then
+    # always start from the beginning when we didn't fetch any log events yet
+    log_events=`aws logs get-log-events --log-group-name ${build_cwlogs_group} --log-stream-name ${build_cwlogs_stream} --start-from-head`
   else
-    log_events=$(aws logs get-log-events --log-group-name ${build_cwlogs_group} --log-stream-name ${build_cwlogs_stream} --start-from-head --next-token ${nextForwardToken})
+    # otherwise, resume from where we left
+    log_events=`aws logs get-log-events --log-group-name ${build_cwlogs_group} --log-stream-name ${build_cwlogs_stream} --start-from-head --next-token ${nextForwardToken}`
+  fi
+
+  # extract log events
+  events=`echo ${log_events} | jq -c -r '.events[]'`
+  
+  if [ "${has_events}" = "true" ] || [ "${events}" != "" ]; then
+    if [ "${has_events}" != "true" ]; then
+        echo "-> Log events follow:"
+        echo "------------------------------------------"
+    fi
+    has_events=true
+  else
+    echo "Waiting for logs"
+    sleep 10
+    fetch_logs
   fi
 
   # keep previous nextForwardToken value
   previousNextForwardToken=${nextForwardToken}
-
+  # extract token for logs pagination
   nextForwardToken=`echo ${log_events} | jq -c -r '.nextForwardToken'`;
-  events=`echo ${log_events} | jq -c -r '.events'`;
 
-  if [ "$(echo "${events}" | jq -r '.[]')" = "" ] && [ -z ${build_has_started} ]; then
-    echo "Waiting for build phase to start"
-    return
-  elif [ -z ${build_has_started} ]; then
-    echo
-    echo "Cloudwatch logs are available at the following url \nhttps://${AWS_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_DEFAULT_REGION}#logEventViewer:group=${build_cwlogs_group};stream=${build_cwlogs_stream}"
-    echo
-    echo "-> Build phase started, log events follow:"
-    echo "------------------------------------------"
-    echo
-    build_has_started=true
+  # get-log-events may or may not return the same token when reaching the end of the stream, so we also check whether there are new events in the response and keep iterating from the same token until there are new log events
+  if [ "$nextForwardToken" = "$previousNextForwardToken" ] || [ "$events" = "" ]; then
+    nextForwardToken=$previousNextForwardToken
+    return 
   fi
 
   # iterate on log events to display log messages only
   # Note: base64 -d on Alpine | --decode on MacOS for `base64 decode`
-  for row in $(echo "${events}" | jq -r '.[] | @base64'); do
-    echo ${row} | base64 --decode | jq -j '.message'
+  for row in $(echo "${events}" | jq -r '@base64'); do
+    timestamp=`echo ${row} | base64 --decode | jq -j '.timestamp'`
+    ts_seconds=$((${timestamp}/1000))
+    # Note: cross platform
+    date=`date -d @${ts_seconds} +'%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r ${ts_seconds} +'%Y-%m-%d %H:%M:%S'`
+    message=`echo ${row} | base64 --decode | jq -j '.message'`
+    echo "${date}   ${message}"
   done
 
-  # if we have reached the end of the stream, get-log-events will return the same token we passed in,
-  # meaning that we need to fetch remaining logs at once if we have not reached the end of the stream
-  if [ "${nextForwardToken}" != "" ] && [ "${nextForwardToken}" != "${previousNextForwardToken}" ]; then
-    fetch_logs
-  fi
+  # we have reached the end of the stream but there might be remaining log events, so we self invoke right away
+  fetch_logs
 }
 
-## Wait until build is complete and fetch logs
+# Wait until build is complete and fetch logs
 until [ "$(aws codebuild batch-get-builds --ids ${start_build_id} --output text --query 'builds[0].buildComplete')" = "True" ];
 do
   fetch_logs;
