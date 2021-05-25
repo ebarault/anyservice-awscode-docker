@@ -195,6 +195,11 @@ if [ ${WAIT_FOR_CODEBUILD} = "true" ]; then
     echo ${log_events} | jq -c -r '.events' > events
     python3 /usr/local/bin/print_events.py events
 
+    # Stop checking for logs if we don't have new event and job is complete
+    if [ "$nextForwardToken" = "$previousNextForwardToken" ] && [ "$(aws codebuild batch-get-builds --ids ${start_build_id} --output text --query 'builds[0].buildComplete')" = "True" ]; then
+          return
+    fi
+
     # we have reached the end of the stream but there might be remaining log events, so we self invoke right away
     fetch_logs
   }
